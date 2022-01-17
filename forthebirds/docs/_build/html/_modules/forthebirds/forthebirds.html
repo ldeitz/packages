@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>forthebirds.forthebirds &mdash; forthebirds  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/togglebutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/mystnb.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/togglebutton.js"></script>
+        <script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> forthebirds
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../example.html">Example usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conduct.html">Code of Conduct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">forthebirds</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>forthebirds.forthebirds</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for forthebirds.forthebirds</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span>
+
+<div class="viewcode-block" id="eBirdTripPlanner"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner">[docs]</a><span class="k">class</span> <span class="nc">eBirdTripPlanner</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class uses the eBird API region endpoints to find recent, notable, and specific species observations for locations</span>
+<span class="sd">    around the world. Using the eBird API requires obtaining a token, which anyone with an eBird account can do at</span>
+<span class="sd">    https://ebird.org/api/keygen.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    token : String</span>
+<span class="sd">        Token that can be obtained at https://ebird.org/api/keygen</span>
+<span class="sd">    state : String, default null</span>
+<span class="sd">        Full name of desired state to explore</span>
+<span class="sd">    country : String, default null</span>
+<span class="sd">        Full name of desired country to explore</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Class object</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    &gt;&gt;&gt; from forthebirds import eBirdTripPlanner</span>
+<span class="sd">    &gt;&gt;&gt; eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">state_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">country_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">token</span><span class="p">,</span> <span class="s1">&#39;eBirdTripPlanner requires use of a token sourced from eBird.org.&#39;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token</span><span class="p">,</span><span class="nb">str</span><span class="p">),</span> <span class="s1">&#39;API token must be a string.&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_name</span> <span class="o">=</span> <span class="n">state_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">country_name</span> <span class="o">=</span> <span class="n">country_name</span>
+
+<div class="viewcode-block" id="eBirdTripPlanner._ebird_api_call"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner._ebird_api_call">[docs]</a>    <span class="k">def</span> <span class="nf">_ebird_api_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Helper function to call eBird API endpoints.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url : String</span>
+<span class="sd">            The endpoint url of interest</span>
+<span class="sd">        params = Dict, default null</span>
+<span class="sd">            Dictionary of parameters for endpoint of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        The JSON output of the API call</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner._ebird_api_call(url=&#39;https://api.ebird.org/v2/ref/region/list/country/world&#39;)</span>
+<span class="sd">        [{&#39;code&#39;: &#39;AF&#39;, &#39;name&#39;: &#39;Afghanistan&#39;},</span>
+<span class="sd">         {&#39;code&#39;: &#39;AL&#39;, &#39;name&#39;: &#39;Albania&#39;},</span>
+<span class="sd">         {&#39;code&#39;: &#39;DZ&#39;, &#39;name&#39;: &#39;Algeria&#39;},</span>
+<span class="sd">         {&#39;code&#39;: &#39;AS&#39;, &#39;name&#39;: &#39;American Samoa&#39;},</span>
+<span class="sd">         ...]</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="nb">dict</span><span class="p">),</span> <span class="s1">&#39;Parameters must be given in dictionary format.&#39;</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">{}</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;X-eBirdApiToken&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">}</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner._find_region_code"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner._find_region_code">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_find_region_code</span><span class="p">(</span><span class="n">region_to_find</span><span class="p">,</span> <span class="n">region_list</span><span class="p">,</span> <span class="n">region_type</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Helper function to find one region name from a given list of region names. Used for endpoints that require</span>
+<span class="sd">        region codes that are not intuitive for a user.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        region_to_find : String</span>
+<span class="sd">            The name of the region of interest</span>
+<span class="sd">        region_list : List</span>
+<span class="sd">            The list of dictionaries containing region name and region code, found through an endpoint</span>
+<span class="sd">        region_type : String</span>
+<span class="sd">            The type of region to search for. Used in an error message if the region is not found. The region types supported</span>
+<span class="sd">            are &#39;substate&#39;, &#39;state&#39;, and &#39;country&#39;</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String</span>
+<span class="sd">            The region code</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner._find_region_code(&#39;New York&#39;, list_of_state_codes, &#39;state&#39;)</span>
+<span class="sd">        US-NY</span>
+
+<span class="sd">        The code of the region (New York State).</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner._find_region_code(&#39;Kings&#39;, list_of_ny_counties, &#39;substate&#39;)</span>
+<span class="sd">        US-NY-047</span>
+
+<span class="sd">        The code of the region (Kings County, New York)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region_to_find</span><span class="p">,</span><span class="nb">str</span><span class="p">),</span> <span class="s1">&#39;The geography to search for must be a string.&#39;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region_list</span><span class="p">,</span><span class="nb">list</span><span class="p">),</span> <span class="s1">&#39;Must have a list of regions for region_list input.&#39;</span>
+
+        <span class="n">region_code</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">region_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">region</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">region_to_find</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">region_code</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">region_code</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">region_code</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">region_to_find</span><span class="si">}</span><span class="s1"> does not exist within the </span><span class="si">{</span><span class="n">region_type</span><span class="si">}</span><span class="s1"> list. Use find_</span><span class="si">{</span><span class="n">region_type</span><span class="si">}</span><span class="s1">_code to see all supported names.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner._get_bird_id_info"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner._get_bird_id_info">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_bird_id_info</span><span class="p">(</span><span class="n">bird_abbr</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Helper function to scrape identification information from the eBird website.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bird_abbr : String</span>
+<span class="sd">            The eBird abbreviation of the species of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String</span>
+<span class="sd">            A short paragraph with some information on habitat, size, shape, color pattern, and/or behavior of the species</span>
+<span class="sd">            of interest</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner._get_bird_id_info(&#39;amewoo&#39;)</span>
+<span class="sd">        &#39;Plump, well-camouflaged shorebird that favors wooded or shrubby areas, usually near open fields. Plain</span>
+<span class="sd">        buffy-salmon belly distinctive; also note intricately patterned upperparts with broad gray stripes down the back.</span>
+<span class="sd">        Goofy-looking expression with huge dark eye placed high and far back on head. Extremely long bill used to probe the</span>
+<span class="sd">        ground for worms. When flushed from dense cover, listen for high-pitched wing twittering and note rotund shape and</span>
+<span class="sd">        long bill. Might be confused with Wilson’s Snipe, but woodcock is not nearly as dark and patterned. Fairly common</span>
+<span class="sd">        throughout eastern North America, but secretive and rarely seen well in daytime. Always on the ground, except during</span>
+<span class="sd">        well-known elaborate courtship display performed from dusk to dawn in spring. Listen for loud nasal “PEENT!” calls</span>
+<span class="sd">        from the ground and high-pitched chirps and twitters (produced by the outer wing feathers) from high in the sky.&#39;</span>
+
+<span class="sd">        The identifying information for the American Woodcock (&#39;amewoo&#39;).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://ebird.org/species/</span><span class="si">{</span><span class="n">bird_abbr</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">page</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="n">birdsoup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s1">&#39;html.parser&#39;</span><span class="p">)</span>
+        <span class="n">taginfo</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">birdsoup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;meta&#39;</span><span class="p">,</span> <span class="nb">property</span><span class="o">=</span><span class="s1">&#39;og:description&#39;</span><span class="p">))</span>
+        <span class="n">birdid</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(content=\&quot;)([^\&quot;]*)&#39;</span><span class="p">,</span><span class="n">taginfo</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">birdid</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.find_country_code"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.find_country_code">[docs]</a>    <span class="k">def</span> <span class="nf">find_country_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find the code of the country given when the class was instantiated or to view all supported country</span>
+<span class="sd">        names. Default is to view all supported country names.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        find_all : Boolean, default True</span>
+<span class="sd">            If True, will return a list of country names</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of one specified country code or List of all supported country names</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_country_code()</span>
+<span class="sd">        [&#39;Afghanistan&#39;,</span>
+<span class="sd">         &#39;Albania&#39;,</span>
+<span class="sd">         &#39;Algeria&#39;,</span>
+<span class="sd">         &#39;American Samoa&#39;,</span>
+<span class="sd">         ...]</span>
+
+<span class="sd">        A list of supported country names.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_country_code(find_all=False)</span>
+<span class="sd">        &#39;US&#39;</span>
+
+<span class="sd">        The country code given for the United States, the country given when the class was instantiated.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;https://api.ebird.org/v2/ref/region/list/country/world&#39;</span>
+        <span class="n">countries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">find_all</span><span class="p">:</span>
+            <span class="n">country_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">country</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">country</span> <span class="ow">in</span> <span class="n">countries</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">country_names</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">country_name</span><span class="p">:</span>
+                <span class="n">country_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_region_code</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">country_name</span><span class="p">,</span> <span class="n">countries</span><span class="p">,</span> <span class="s1">&#39;country&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">country_code</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Class instantiated without a country name.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.find_state_code"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.find_state_code">[docs]</a>    <span class="k">def</span> <span class="nf">find_state_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find the code of the state given when the class was instantiated or to view all supported state names.</span>
+<span class="sd">        Default is to view all supported state names.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        find_all : Boolean, default True</span>
+<span class="sd">            If True, will return a list of state names within the country used when class was instantiated.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of one specified state code or List of all supported state names</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_state_code()</span>
+<span class="sd">        [&#39;Alabama&#39;,</span>
+<span class="sd">         &#39;Alaska&#39;,</span>
+<span class="sd">         &#39;Arizona&#39;,</span>
+<span class="sd">         &#39;Arkansas&#39;,</span>
+<span class="sd">         &#39;California&#39;,</span>
+<span class="sd">         ...]</span>
+
+<span class="sd">        A list of supported state names.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_substate_code(find_all=False)</span>
+<span class="sd">        US-NY</span>
+
+<span class="sd">        The region code of New York State in the United States, both given when the class was instantiated.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">country_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_country_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.ebird.org/v2/ref/region/list/subnational1/</span><span class="si">{</span><span class="n">country_code</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">find_all</span><span class="p">:</span>
+            <span class="n">state_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">state_names</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_name</span><span class="p">:</span>
+                <span class="n">state_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_region_code</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_name</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="s1">&#39;state&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">state_code</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Class instantiated without a state name.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.find_substate_code"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.find_substate_code">[docs]</a>    <span class="k">def</span> <span class="nf">find_substate_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find the code of a given substate (in the United States, the county) from the state input when the class</span>
+<span class="sd">        was instantiated or to view all supported substate (county) names. Default is to view all supported substate names.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        substate_name : String, default null</span>
+<span class="sd">            The name of the substate or county of interest. This defaults to null to support the find_all function.</span>
+<span class="sd">        find_all : Boolean, default True</span>
+<span class="sd">            If True, will return a list of county names within the state used when class was instantiated.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of one specified substate code or List of all supported substate names</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_substate_code()</span>
+<span class="sd">        [&#39;Albany&#39;,</span>
+<span class="sd">         &#39;Allegany&#39;,</span>
+<span class="sd">         &#39;Bronx&#39;,</span>
+<span class="sd">         &#39;Broome&#39;,</span>
+<span class="sd">         &#39;Cattaraugus&#39;,</span>
+<span class="sd">         &#39;Cayuga&#39;,</span>
+<span class="sd">         ...]</span>
+
+<span class="sd">        A list of supported substate (county) names.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_substate_code(substate=&#39;Kings&#39;,find_all=False)</span>
+<span class="sd">        US-NY-047</span>
+
+<span class="sd">        The region code of Kings County in New York State in the United States, the latter two given when the class was</span>
+<span class="sd">        instantiated.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">country_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_country_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">state_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_state_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.ebird.org/v2/ref/region/list/subnational2/</span><span class="si">{</span><span class="n">state_code</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">substates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">find_all</span><span class="p">:</span>
+            <span class="n">substate_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">substate</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">substate</span> <span class="ow">in</span> <span class="n">substates</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">substate_names</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">substate_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_region_code</span><span class="p">(</span><span class="n">substate_name</span><span class="p">,</span> <span class="n">substates</span><span class="p">,</span><span class="s1">&#39;substate&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">substate_code</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.get_regional_hotspots"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.get_regional_hotspots">[docs]</a>    <span class="k">def</span> <span class="nf">get_regional_hotspots</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">region_type</span><span class="o">=</span><span class="s1">&#39;state&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to list the birding hotspots at either substate or state level, and can return in either a user-friendly</span>
+<span class="sd">        dataframe or a json dictionary. The state-level search will return hotspots for the state name given when the class</span>
+<span class="sd">        was instantiated.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        substate_name : String, default null</span>
+<span class="sd">            The name of the substate or county of interest. This defaults to null to support state-level searches.</span>
+<span class="sd">        region_type : String, default &#39;substate&#39;</span>
+<span class="sd">            The level of region at which to search for hotspots. Must be indicator of &#39;state&#39; or &#39;substate&#39;. Defaults to</span>
+<span class="sd">            &#39;state&#39;.</span>
+<span class="sd">        json : Boolean, default False</span>
+<span class="sd">            Indicates whether or not to return results in JSON or DataFrame.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DataFrame or JSON of all hotspots within the given region</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.get_regional_hotspots(json=True)</span>
+<span class="sd">        A JSON dictionary of all hotspots within New York State.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.get_regional_hotspots(&#39;Kings&#39;, region_type=&#39;substate&#39;)</span>
+<span class="sd">        A DataFrame of all hotspots within Kings County in New York State.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">substate_name</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;substate&#39;</span><span class="p">,</span> <span class="s1">&#39;If substate_name is given, region_type must be substate.&#39;</span>
+        <span class="k">if</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;substate&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_substate_code</span><span class="p">(</span><span class="n">substate_name</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;state&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_state_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.ebird.org/v2/ref/hotspot/</span><span class="si">{</span><span class="n">region_code</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">hotspots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;fmt&#39;</span><span class="p">:</span><span class="s1">&#39;json&#39;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">json</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hotspots</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hotspot_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">hotspots</span><span class="p">)[[</span><span class="s1">&#39;locId&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">,</span> <span class="s1">&#39;latestObsDt&#39;</span><span class="p">,</span> <span class="s1">&#39;numSpeciesAllTime&#39;</span><span class="p">]]</span>
+            <span class="n">rename_cols</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;locId&#39;</span><span class="p">:</span><span class="s1">&#39;Location ID&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">:</span><span class="s1">&#39;Location Name&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">:</span><span class="s1">&#39;Latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">:</span><span class="s1">&#39;Longitude&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;latestObsDt&#39;</span><span class="p">:</span><span class="s1">&#39;Latest Observation Date&#39;</span><span class="p">,</span> <span class="s1">&#39;numSpeciesAllTime&#39;</span><span class="p">:</span><span class="s1">&#39;Number of Species&#39;</span><span class="p">}</span>
+            <span class="n">hotspot_df</span> <span class="o">=</span> <span class="n">hotspot_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_cols</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">hotspot_df</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.find_hotspot_code"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.find_hotspot_code">[docs]</a>    <span class="k">def</span> <span class="nf">find_hotspot_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hotspot_name</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">region_type</span><span class="o">=</span><span class="s1">&#39;state&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find the region code of a given birding hotspot within the state input at class instantiation, or within</span>
+<span class="sd">        a substate if hotspot names are non-unique.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hotspot_name : String</span>
+<span class="sd">            The name of the hotspot of interest</span>
+<span class="sd">        substate_name : String, default null</span>
+<span class="sd">            The name of the substate or county of interest. This defaults to null to support state-level searches.</span>
+<span class="sd">        region_type : String, default &#39;state&#39;</span>
+<span class="sd">            The level of region at which to search for the hotspot name. Must be indicator of &#39;state&#39; or &#39;substate&#39;.</span>
+<span class="sd">            Defaults to &#39;state&#39;.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String</span>
+<span class="sd">            Location code of the hotspot in question</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.find_hotspot_code(hotspot_name=&#39;Prospect Park&#39;)</span>
+<span class="sd">        L109516</span>
+
+<span class="sd">        The location code of Prospect Park, a birding hotspot, in New York.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">substate_name</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;substate&#39;</span><span class="p">,</span> <span class="s1">&#39;If substate_name is given, region_type must be substate.&#39;</span>
+        <span class="k">assert</span> <span class="n">region_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;substate&#39;</span><span class="p">,</span> <span class="s1">&#39;state&#39;</span><span class="p">),</span> <span class="s1">&#39;Region type must be substate or state to find a hotspot.&#39;</span>
+
+        <span class="n">hotspot_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_regional_hotspots</span><span class="p">(</span><span class="n">substate_name</span><span class="p">,</span> <span class="n">region_type</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">hotspot_code</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">hotspot</span> <span class="ow">in</span> <span class="n">hotspot_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hotspot</span><span class="p">[</span><span class="s1">&#39;locName&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">hotspot_name</span><span class="p">:</span>
+                <span class="n">hotspot_code</span> <span class="o">=</span> <span class="n">hotspot</span><span class="p">[</span><span class="s1">&#39;locId&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">hotspot_code</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hotspot_code</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This hotspot does not exist within the given region.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.recent_region_observations"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.recent_region_observations">[docs]</a>    <span class="k">def</span> <span class="nf">recent_region_observations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hotspot_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">region_type</span><span class="o">=</span><span class="s1">&#39;state&#39;</span><span class="p">,</span> <span class="n">idinfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">days_back</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[],</span> <span class="n">only_hotspots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find recent bird observations within a region. The user can look at a hotspot, substate, state, or</span>
+<span class="sd">        country level. This function can also return identification information for each bird record. Default is to return</span>
+<span class="sd">        observations at the state level.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hotspot_name : String, default null</span>
+<span class="sd">            The name of a birding hotspot. This defaults to null to support state-level searches.</span>
+<span class="sd">        substate_name : String, default null</span>
+<span class="sd">            The name of a substate or county of interest. This defaults to null to support state-level searches.</span>
+<span class="sd">        region_type : String, default null</span>
+<span class="sd">            The level of region at which to search for the hotspot name. Must be indicator of &#39;substate&#39;, &#39;state&#39;, or</span>
+<span class="sd">            &#39;country&#39;. Defaults to &#39;state&#39;.</span>
+<span class="sd">        idinfo : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether the function should return bird identification information with each record. This</span>
+<span class="sd">            scrapes eBird.org. Default is False because it significantly slows down the function.</span>
+<span class="sd">        days_back : Int, default 14</span>
+<span class="sd">            The number of days to look back for observations. The limit of the API for recent observations is 30 days.</span>
+<span class="sd">            Default is set to 14 because that is the API default.</span>
+<span class="sd">        locations : List, default null</span>
+<span class="sd">            A list of up to 10 location IDs (hotspot, substate, state, or country) to pull recent observations from.</span>
+<span class="sd">        only_hotspots : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether to only return bird observations from hotspot locations.</span>
+<span class="sd">        json : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether to return results in JSON or DataFrame.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DataFrame or JSON of recent bird observations within a geography</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.recent_region_observations()</span>
+<span class="sd">        DataFrame of observations within the last 14 days in New York State.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.recent_region_observations(hotspot_name=&#39;Prospect Park&#39;, idinfo=True, days_back=30, json=True)</span>
+<span class="sd">        JSON of observations within the last 30 days in Prospect Park (New York), with bird ID info for each record.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">locations</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">elif</span> <span class="n">hotspot_name</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_hotspot_code</span><span class="p">(</span><span class="n">hotspot_name</span><span class="p">,</span> <span class="n">substate_name</span><span class="p">,</span> <span class="n">region_type</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;substate&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_substate_code</span><span class="p">(</span><span class="n">substate_name</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;state&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_state_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;country&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_country_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;back&#39;</span><span class="p">:</span><span class="n">days_back</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span><span class="n">locations</span><span class="p">,</span> <span class="s1">&#39;hotspot&#39;</span><span class="p">:</span><span class="n">only_hotspots</span><span class="p">}</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.ebird.org/v2/data/obs/</span><span class="si">{</span><span class="n">region_code</span><span class="si">}</span><span class="s1">/recent&#39;</span>
+        <span class="n">observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No recent observations in this location.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">idinfo</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations</span><span class="p">:</span>
+                <span class="n">birdabb</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;speciesCode&#39;</span><span class="p">]</span>
+                <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ID Info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bird_id_info</span><span class="p">(</span><span class="n">birdabb</span><span class="p">)</span>
+                <span class="n">obs_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">observations</span><span class="p">)[[</span><span class="s1">&#39;comName&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">,</span> <span class="s1">&#39;howMany&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">,</span> <span class="s1">&#39;ID Info&#39;</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obs_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">observations</span><span class="p">)[[</span><span class="s1">&#39;comName&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">,</span> <span class="s1">&#39;howMany&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">]]</span>
+
+        <span class="k">if</span> <span class="n">json</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">observations</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rename_cols</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;comName&#39;</span><span class="p">:</span><span class="s1">&#39;Common Name&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">:</span><span class="s1">&#39;Scientific Name&#39;</span><span class="p">,</span><span class="s1">&#39;locName&#39;</span><span class="p">:</span><span class="s1">&#39;Location Name&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">:</span><span class="s1">&#39;Date Observed&#39;</span><span class="p">,</span>
+                           <span class="s1">&#39;howMany&#39;</span><span class="p">:</span><span class="s1">&#39;How Many Observed&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">:</span><span class="s1">&#39;Latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">:</span><span class="s1">&#39;Longitude&#39;</span><span class="p">}</span>
+            <span class="n">obs_df</span> <span class="o">=</span> <span class="n">obs_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_cols</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">obs_df</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.recent_rare_region_observations"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.recent_rare_region_observations">[docs]</a>    <span class="k">def</span> <span class="nf">recent_rare_region_observations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hotspot_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">region_type</span><span class="o">=</span><span class="s1">&#39;state&#39;</span><span class="p">,</span> <span class="n">idinfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">days_back</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[],</span> <span class="n">only_hotspots</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find rare and recent bird observations within a region. The user can look at a hotspot, substate, state,</span>
+<span class="sd">        or country level. This function can also return identification information for each bird record. Default is to return</span>
+<span class="sd">        observations at the state level.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hotspot_name : String, default null</span>
+<span class="sd">            The name of a birding hotspot. This defaults to null to support state-level searches.</span>
+<span class="sd">        substate_name : String, default null</span>
+<span class="sd">            The name of a substate or county of interest. This defaults to null to support state-level searches.</span>
+<span class="sd">        region_type : String, default null</span>
+<span class="sd">            The level of region at which to search for the hotspot name. Must be indicator of &#39;substate&#39;, &#39;state&#39;, or</span>
+<span class="sd">            &#39;country&#39;. Defaults to &#39;state&#39;.</span>
+<span class="sd">        idinfo : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether the function should return bird identification information with each record. This</span>
+<span class="sd">            scrapes eBird.org. Default is False because it significantly slows down the function.</span>
+<span class="sd">        days_back : Int, default 14</span>
+<span class="sd">            The number of days to look back for observations. The limit of the API for recent observations is 30 days.</span>
+<span class="sd">            Default is set to 14 because that is the API default.</span>
+<span class="sd">        locations : List, default null</span>
+<span class="sd">            A list of up to 10 location IDs (hotspot, substate, state, or country) to pull recent observations from.</span>
+<span class="sd">        only_hotspots : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether to only return bird observations from hotspot locations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DataFrame of recent rare bird observations within a geography</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.recent_rare_region_observations()</span>
+<span class="sd">        DataFrame of rare observations within the last 14 days in New York State.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.recent_rare_region_observations(hotspot_name=&#39;Prospect Park&#39;, idinfo=True, days_back=30)</span>
+<span class="sd">        DataFrame of rare observations within the last 30 days in Prospect Park (New York), with bird ID info for each</span>
+<span class="sd">        record.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">locations</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">elif</span> <span class="n">hotspot_name</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_hotspot_code</span><span class="p">(</span><span class="n">hotspot_name</span><span class="p">,</span> <span class="n">substate_name</span><span class="p">,</span> <span class="n">region_type</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;substate&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_substate_code</span><span class="p">(</span><span class="n">substate_name</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;state&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_state_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;country&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_country_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;back&#39;</span><span class="p">:</span><span class="n">days_back</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span><span class="n">locations</span><span class="p">,</span> <span class="s1">&#39;hotspot&#39;</span><span class="p">:</span><span class="n">only_hotspots</span><span class="p">}</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.ebird.org/v2/data/obs/</span><span class="si">{</span><span class="n">region_code</span><span class="si">}</span><span class="s1">/recent/notable&#39;</span>
+        <span class="n">observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">idinfo</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations</span><span class="p">:</span>
+                <span class="n">birdabb</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;speciesCode&#39;</span><span class="p">]</span>
+                <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ID Info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bird_id_info</span><span class="p">(</span><span class="n">birdabb</span><span class="p">)</span>
+                <span class="n">obs_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">observations</span><span class="p">)[[</span><span class="s1">&#39;comName&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">,</span> <span class="s1">&#39;howMany&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">,</span> <span class="s1">&#39;ID Info&#39;</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obs_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">observations</span><span class="p">)[[</span><span class="s1">&#39;comName&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">,</span> <span class="s1">&#39;howMany&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">]]</span>
+
+        <span class="n">obs_df</span><span class="p">[</span><span class="s1">&#39;obsDt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">obs_df</span><span class="p">[</span><span class="s1">&#39;obsDt&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span>
+        <span class="n">rename_cols</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;comName&#39;</span><span class="p">:</span><span class="s1">&#39;Common Name&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">:</span><span class="s1">&#39;Scientific Name&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">:</span><span class="s1">&#39;Location Name&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">:</span><span class="s1">&#39;Date Observed&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;lat&#39;</span><span class="p">:</span><span class="s1">&#39;Latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;lng&#39;</span><span class="p">:</span><span class="s1">&#39;Longitude&#39;</span><span class="p">,</span> <span class="s1">&#39;howMany&#39;</span><span class="p">:</span><span class="s1">&#39;How Many Observed&#39;</span><span class="p">}</span>
+        <span class="n">obs_df</span> <span class="o">=</span> <span class="n">obs_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_cols</span><span class="p">)</span>
+        <span class="n">obs_df_deduped</span> <span class="o">=</span> <span class="n">obs_df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obs_df_deduped</span></div>
+
+<div class="viewcode-block" id="eBirdTripPlanner.recent_species_observations_by_location"><a class="viewcode-back" href="../../autoapi/forthebirds/forthebirds/index.html#forthebirds.forthebirds.eBirdTripPlanner.recent_species_observations_by_location">[docs]</a>    <span class="k">def</span> <span class="nf">recent_species_observations_by_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bird_name</span><span class="p">,</span> <span class="n">hotspot_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                                                <span class="n">region_type</span><span class="o">=</span><span class="s1">&#39;state&#39;</span><span class="p">,</span> <span class="n">idinfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">days_back</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[],</span>
+                                                <span class="n">only_hotspots</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Function to find recent observations of a specific species within a region. The user can look at a hotspot, substate,</span>
+<span class="sd">        state, or country level. This function can also return identification information for each bird record. Default is to</span>
+<span class="sd">        return observations at the state level.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hotspot_name : String, default null</span>
+<span class="sd">            The name of a birding hotspot. This defaults to null to support state-level searches.</span>
+<span class="sd">        substate_name : String, default null</span>
+<span class="sd">            The name of a substate or county of interest. This defaults to null to support state-level searches.</span>
+<span class="sd">        region_type : String, default null</span>
+<span class="sd">            The level of region at which to search for the hotspot name. Must be indicator of &#39;substate&#39;, &#39;state&#39;, or</span>
+<span class="sd">            &#39;country&#39;. Defaults to &#39;state&#39;.</span>
+<span class="sd">        idinfo : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether the function should return bird identification information with each record. This</span>
+<span class="sd">            scrapes eBird.org. Default is False because it significantly slows down the function.</span>
+<span class="sd">        days_back : Int, default 14</span>
+<span class="sd">            The number of days to look back for observations. The limit of the API for recent observations is 30 days.</span>
+<span class="sd">            Default is set to 14 because that is the API default.</span>
+<span class="sd">        locations : List, default null</span>
+<span class="sd">            A list of up to 10 location IDs (hotspot, substate, state, or country) to pull recent observations from.</span>
+<span class="sd">        only_hotspots : Boolean, default False</span>
+<span class="sd">            Flag to indicate whether to only return bird observations from hotspot locations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DataFrame of recent specific species observations within a geography</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner = eBirdTripPlanner(token=&#39;abc123&#39;, state_name=&#39;New York&#39;, country_name=&#39;United States&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; birdplanner.recent_rare_region_observations()</span>
+<span class="sd">        DataFrame of rare observations within the last 14 days in New York State.</span>
+
+<span class="sd">        &gt;&gt;&gt; birdplanner.recent_rare_region_observations(hotspot_name=&#39;Prospect Park&#39;, idinfo=True, days_back=30)</span>
+<span class="sd">        DataFrame of rare observations within the last 30 days in Prospect Park (New York), with bird ID info for each</span>
+<span class="sd">        record.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">region_observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recent_region_observations</span><span class="p">(</span><span class="n">hotspot_name</span><span class="o">=</span><span class="n">hotspot_name</span><span class="p">,</span> <span class="n">substate_name</span><span class="o">=</span><span class="n">substate_name</span><span class="p">,</span>
+                                                              <span class="n">region_type</span><span class="o">=</span><span class="n">region_type</span><span class="p">,</span> <span class="n">days_back</span><span class="o">=</span><span class="n">days_back</span><span class="p">,</span>
+                                                              <span class="n">locations</span><span class="o">=</span><span class="n">locations</span><span class="p">,</span> <span class="n">only_hotspots</span><span class="o">=</span><span class="n">only_hotspots</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">locations</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">elif</span> <span class="n">hotspot_name</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_hotspot_code</span><span class="p">(</span><span class="n">hotspot_name</span><span class="p">,</span> <span class="n">substate_name</span><span class="p">,</span> <span class="n">region_type</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;substate&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_substate_code</span><span class="p">(</span><span class="n">substate_name</span><span class="p">,</span> <span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;state&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_state_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">region_type</span> <span class="o">==</span> <span class="s1">&#39;country&#39;</span><span class="p">:</span>
+            <span class="n">region_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_country_code</span><span class="p">(</span><span class="n">find_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">species_code</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">reg_obs</span> <span class="ow">in</span> <span class="n">region_observations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">reg_obs</span><span class="p">[</span><span class="s1">&#39;comName&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">bird_name</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">species_code</span> <span class="o">=</span> <span class="n">reg_obs</span><span class="p">[</span><span class="s1">&#39;speciesCode&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">species_code</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.ebird.org/v2/data/obs/</span><span class="si">{</span><span class="n">region_code</span><span class="si">}</span><span class="s1">/recent/</span><span class="si">{</span><span class="n">species_code</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="n">species_observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ebird_api_call</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">species_observation_info</span> <span class="o">=</span> <span class="p">[{</span><span class="n">key</span><span class="p">:</span><span class="n">obs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">obs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span><span class="s1">&#39;comName&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">,</span> <span class="s1">&#39;howMany&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">}}</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">species_observations</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">idinfo</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">observation</span> <span class="ow">in</span> <span class="n">species_observation_info</span><span class="p">:</span>
+                    <span class="n">observation</span><span class="p">[</span><span class="s1">&#39;ID Info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bird_id_info</span><span class="p">(</span><span class="n">species_code</span><span class="p">)</span>
+
+            <span class="n">species_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">species_observation_info</span><span class="p">)</span>
+            <span class="n">rename_cols</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;comName&#39;</span><span class="p">:</span><span class="s1">&#39;Common Name&#39;</span><span class="p">,</span> <span class="s1">&#39;sciName&#39;</span><span class="p">:</span><span class="s1">&#39;Scientific Name&#39;</span><span class="p">,</span> <span class="s1">&#39;locName&#39;</span><span class="p">:</span><span class="s1">&#39;Location Name&#39;</span><span class="p">,</span>
+                           <span class="s1">&#39;howMany&#39;</span><span class="p">:</span><span class="s1">&#39;Number of Observations&#39;</span><span class="p">,</span> <span class="s1">&#39;obsDt&#39;</span><span class="p">:</span><span class="s1">&#39;Date Observed&#39;</span><span class="p">}</span>
+            <span class="n">species_df</span> <span class="o">=</span> <span class="n">species_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_cols</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">species_df</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hotspot_name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No recent observations of </span><span class="si">{</span><span class="n">bird_name</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">hotspot_name</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">substate_name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No recent observations of </span><span class="si">{</span><span class="n">bird_name</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">substate_name</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No recent observations of </span><span class="si">{</span><span class="n">bird_name</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">state_name</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Lauren Deitz.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+:py:mod:`forthebirds`
+=====================
+
+.. py:module:: forthebirds
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   forthebirds/index.rst
+
+
+Package Contents
+----------------
+
+.. py:data:: __version__
+   
+
+   
+
