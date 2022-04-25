@@ -5,7 +5,7 @@ This is a Python package that enables birders to find locations anywhere in the 
 ## Installation
 
 ```bash
-$ pip install forthebirds
+$pip install -i https://test.pypi.org/simple/ forthebirds```
 ```
 
 ## Usage
